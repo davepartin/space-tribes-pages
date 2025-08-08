@@ -1,0 +1,8 @@
+{
+  "name": "space-tribes-pages",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler pages dev ./public --compatibility-date=2024-11-29",
+    "deploy": "echo 'Deploy from GitHub -> Cloudflare Pages'"
+  }
+}

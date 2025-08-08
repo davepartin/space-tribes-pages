@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Space Tribes – Sign in</title>
+    <style>
+      body { font-family: system-ui, Arial, sans-serif; max-width: 560px; margin: 3rem auto; padding: 0 1rem; }
+      h1 { margin-bottom: .25rem; }
+      .card { border: 1px solid #ddd; border-radius: 12px; padding: 1rem; }
+      label { display:block; margin-top: .75rem; font-weight:600; }
+      input, select, button { font-size: 16px; padding: .6rem .7rem; border-radius: 8px; border: 1px solid #bbb; width: 100%; }
+      button { margin-top: 1rem; cursor: pointer; }
+      .row { display:flex; gap:.75rem; align-items:center; }
+      .row > * { flex:1; }
+      small { color:#666; }
+      .hint { margin-top:.75rem; color:#444; }
+      .success { color: #0a7f2e; }
+      .error { color: #9a0000; }
+      .center { text-align:center; }
+    </style>
+  </head>
+  <body>
+    <h1>Space Tribes</h1>
+    <p class="hint">Create a 4-digit PIN the first time. Use it next time to log in.</p>
+    <div class="card">
+      <label for="name">Commander name</label>
+      <input id="name" placeholder="e.g., Dave, Joy, Curtis" autofocus>
+      <label for="pin">PIN (4 digits)</label>
+      <input id="pin" inputmode="numeric" pattern="\d{4}" maxlength="4" placeholder="1234">
+      <div class="row">
+        <button id="create">Create PIN (first time)</button>
+        <button id="login">Log in</button>
+      </div>
+      <div id="msg" class="hint"></div>
+    </div>
+    <p class="center"><small>Having trouble? Ask Dave to reset your PIN.</small></p>
+    <script>
+      async function callLogin(mode){
+        const name = document.getElementById('name').value.trim();
+        const pin  = document.getElementById('pin').value.trim();
+        const msg  = document.getElementById('msg');
+        msg.textContent = '';
+        if(!name || !/^\d{4}$/.test(pin)){
+          msg.textContent = 'Please enter your name and a 4-digit PIN.';
+          msg.className = 'hint error';
+          return;
+        }
+        const res = await fetch('/login', {
+          method:'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ name, pin, mode })
+        });
+        const data = await res.json().catch(()=>({ok:false,error:'Invalid server response'}));
+        if(res.ok && data.ok){
+          msg.textContent = 'Success! Redirecting…';
+          msg.className = 'hint success';
+          location.href = '/main.html';
+        }else{
+          msg.textContent = data.error || 'Login failed.';
+          msg.className = 'hint error';
+        }
+      }
+      document.getElementById('create').onclick = ()=>callLogin('create');
+      document.getElementById('login').onclick  = ()=>callLogin('login');
+    </script>
+  </body>
+</html>

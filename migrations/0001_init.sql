@@ -1,0 +1,28 @@
+CREATE TABLE IF NOT EXISTS players (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT UNIQUE NOT NULL,
+  pin TEXT NOT NULL,
+  created_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS state (
+  key TEXT PRIMARY KEY,
+  value TEXT
+);
+
+CREATE TABLE IF NOT EXISTS decisions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  player_id INTEGER NOT NULL,
+  day INTEGER NOT NULL,
+  payload TEXT,
+  updated_at TEXT,
+  UNIQUE(player_id, day)
+);
+
+CREATE TABLE IF NOT EXISTS news (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  message TEXT NOT NULL,
+  created_at TEXT
+);
+
+INSERT OR IGNORE INTO state (key, value) VALUES ('current_day', '1');
