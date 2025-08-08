@@ -1,3 +1,5 @@
+pages_build_output_dir = "public"
+
 name = "space-tribes-pages"
 compatibility_date = "2024-11-29"
 

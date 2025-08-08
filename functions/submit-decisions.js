@@ -13,11 +13,11 @@ export const onRequestPost = async ({ env, request }) => {
   const current_day = current ? Number(current.value) : 1;
 
   await db.batch([
-    db.prepare("""
+    db.prepare(`
       INSERT INTO decisions (player_id, day, payload, updated_at)
       VALUES (?, ?, ?, datetime('now'))
       ON CONFLICT(player_id, day) DO UPDATE SET payload=excluded.payload, updated_at=datetime('now')
-    """ ).bind(session.id, current_day, JSON.stringify(body))
+    `).bind(session.id, current_day, JSON.stringify(body))
   ]);
 
   return new Response(JSON.stringify({ ok:true }));

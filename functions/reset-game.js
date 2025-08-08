@@ -9,10 +9,10 @@ export const onRequestPost = async ({ env, request }) => {
   await db.batch([
     db.prepare("DELETE FROM decisions"),
     db.prepare("DELETE FROM news"),
-    db.prepare("""
+    db.prepare(`
       INSERT INTO state (key, value) VALUES ('current_day', '1')
       ON CONFLICT(key) DO UPDATE SET value = '1'
-    """ )
+    `)
   ]);
 
   return new Response(JSON.stringify({ ok:true }));

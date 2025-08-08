@@ -5,10 +5,10 @@ async function runMarketAndAdvance(db){
   const day = curr ? Number(curr.value) : 1;
   await db.batch([
     db.prepare("INSERT INTO news (message, created_at) VALUES (?, datetime('now'))").bind(`Processed day ${day}. Market settled. Raids resolved. Sales posted.`),
-    db.prepare("""
+    db.prepare(`
       INSERT INTO state (key, value) VALUES ('current_day', ?)
       ON CONFLICT(key) DO UPDATE SET value = excluded.value
-    """ ).bind(String(day+1))
+    `).bind(String(day+1))
   ]);
 }
 
