@@ -22,7 +22,6 @@ export const onRequestPost = async ({ env, request }) => {
       if (existing) {
         return new Response(JSON.stringify({ ok:false, error:"Name already exists. Try logging in." }), { status:409, headers });
       }
-      // INSERT without RETURNING, then fetch the row
       await db.prepare("INSERT INTO players (name, pin, created_at) VALUES (?, ?, datetime('now'))").bind(name, pin).run();
       const created = await db.prepare("SELECT id, name FROM players WHERE name = ?").bind(name).first();
       if (!created) {
@@ -40,7 +39,6 @@ export const onRequestPost = async ({ env, request }) => {
       return new Response(JSON.stringify({ ok:true, user:{ id: existing.id, name: existing.name } }), { headers: h });
     }
   } catch (err) {
-    // Always return JSON so the client doesn't choke
     return new Response(JSON.stringify({ ok:false, error:`Server error: ${err?.message || err}` }), { status:500, headers:{ "Content-Type":"application/json" } });
   }
 };

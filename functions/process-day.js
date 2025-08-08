@@ -19,6 +19,5 @@ export const onRequestPost = async ({ env, request }) => {
 
   const db = env.DB;
   await runMarketAndAdvance(db);
-
   return new Response(JSON.stringify({ ok:true }));
 };

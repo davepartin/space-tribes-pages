@@ -6,8 +6,7 @@ export const onRequestPost = async ({ env, request }) => {
 
   const db = env.DB;
   const bodyText = await request.text();
-  let body;
-  try { body = JSON.parse(bodyText || "{}"); } catch { body = { raw: bodyText }; }
+  let body; try { body = JSON.parse(bodyText || "{}"); } catch { body = { raw: bodyText }; }
 
   const current = await db.prepare("SELECT value FROM state WHERE key='current_day'").first();
   const current_day = current ? Number(current.value) : 1;

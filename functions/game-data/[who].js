@@ -1,45 +1,65 @@
-// GET /game-data/me
+// GET /game-data/:who  where :who can be "me" or a numeric playerId
 import { getSession } from "../utils/auth";
 
-export const onRequestGet = async ({ env, request }) => {
+export const onRequestGet = async ({ env, request, params }) => {
   const session = await getSession(env, request);
-  if(!session) return new Response(JSON.stringify({ error:"Unauthorized" }), { status:401 });
+  if (!session) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
 
   const db = env.DB;
+  const who = params?.who;
+  let targetId = session.id;
+  if (who && who !== "me" && /^\d+$/.test(who)) targetId = Number(who);
 
-  const current = await db.prepare("SELECT value FROM state WHERE key='current_day'").first();
-  const current_day = current ? Number(current.value) : 1;
+  const dayRow = await db.prepare("SELECT value FROM state WHERE key='current_day'").first();
+  const currentDay = dayRow ? Number(dayRow.value) : 1;
 
-  const user = await db.prepare("SELECT id, name FROM players WHERE id = ?").bind(session.id).first();
-  if(!user) return new Response(JSON.stringify({ error:"User missing" }), { status:401 });
+  const player = await db.prepare("SELECT id, name FROM players WHERE id = ?").bind(targetId).first();
+  if (!player) return new Response(JSON.stringify({ error: "Player not found" }), { status: 404 });
 
-  // Everyone can see submission status for today (no payloads, just yes/no)
-  const submissions = await db.prepare(`
-    SELECT p.id, p.name,
-           CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END AS submitted
-    FROM players p
-    LEFT JOIN decisions d
-      ON p.id = d.player_id
-     AND d.day = ?
-    ORDER BY p.name
-  `).bind(current_day).all();
+  const decision = await db.prepare("SELECT id, payload FROM decisions WHERE player_id = ? AND day = ?").bind(player.id, currentDay).first();
 
-  const news = await db.prepare(`
-    SELECT created_at, message
-    FROM news
-    ORDER BY created_at DESC
-    LIMIT 10
-  `).all();
+  let parsed; try { parsed = decision?.payload ? JSON.parse(decision.payload) : null; } catch { parsed = null; }
+  const efforts = parsed?.efforts || { whiteDiamonds:0, redRubies:0, blueGems:0, greenPoison:0 };
+  const sales   = parsed?.sales   || { whiteDiamonds:0, redRubies:0, blueGems:0, greenPoison:0 };
+
+  const stockpiles = parsed?.stockpiles || { whiteDiamonds:0, redRubies:0, blueGems:0, greenPoison:0 };
+  const protectedResources = { whiteDiamonds:0, redRubies:0, blueGems:0, greenPoison:0 };
+  const totalStockpiles = {
+    whiteDiamonds: (stockpiles.whiteDiamonds||0) + (protectedResources.whiteDiamonds||0),
+    redRubies:     (stockpiles.redRubies||0)     + (protectedResources.redRubies||0),
+    blueGems:      (stockpiles.blueGems||0)      + (protectedResources.blueGems||0),
+    greenPoison:   (stockpiles.greenPoison||0)   + (protectedResources.greenPoison||0),
+  };
+  const lastEfforts = efforts;
+  const prices = { whiteDiamonds:20, redRubies:15, blueGems:12, greenPoison:10 };
+  const needs  = { whiteDiamonds:0, redRubies:0, blueGems:0, greenPoison:0 };
+  const lastSupply = { whiteDiamonds:0, redRubies:0, blueGems:0, greenPoison:0 };
+
+  const players = await db.prepare("SELECT id, name FROM players ORDER BY name").all();
+  const leaderboard = players.results.map(p => ({
+    id: p.id, name: p.name, credits: 0,
+    stockpiles: { whiteDiamonds:0, redRubies:0, blueGems:0, greenPoison:0 }
+  }));
+
+  const submittedToday = await db.prepare(
+    `SELECT p.id, p.name, CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END as submitted
+     FROM players p LEFT JOIN decisions d
+       ON p.id = d.player_id AND d.day = ?
+     ORDER BY p.name`
+  ).bind(currentDay).all();
+
+  const newsRows = await db.prepare("SELECT message FROM news ORDER BY created_at DESC LIMIT 10").all();
+  const news = newsRows.results.map(r => r.message);
 
   const payload = {
-    ok: true,
-    currentDay: current_day,
-    currentUser: user,
-    submissionsToday: submissions.results.map(r => ({
-      id: r.id, name: r.name, submitted: !!r.submitted
-    })),
-    news: news.results
+    ok: true, currentDay,
+    playerName: player.name, credits: 0, activePlayers: players.results.length,
+    stockpiles, protectedResources, totalStockpiles,
+    lastEfforts, prices, needs, lastSupply,
+    efforts, sales, lastNightSales: [], hasSubmitted: !!decision,
+    leaderboard, news,
+    submissionsToday: submittedToday.results.map(r => ({ id: r.id, name: r.name, submitted: !!r.submitted }))
   };
 
-  return new Response(JSON.stringify(payload), { headers: { "Content-Type":"application/json" } });
+  return new Response(JSON.stringify(payload), { headers: { "Content-Type": "application/json" } });
 };

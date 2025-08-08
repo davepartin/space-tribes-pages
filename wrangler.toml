@@ -1,7 +1,6 @@
-pages_build_output_dir = "public"
-
 name = "space-tribes-pages"
 compatibility_date = "2024-11-29"
+pages_build_output_dir = "public"
 
 [[d1_databases]]
 binding = "DB"
@@ -11,5 +10,3 @@ database_id = "15e7ac01-10d1-4aa1-abcd-e80293e9841f"
 [vars]
 ADMIN_NAME = "Dave"
 COOKIE_NAME = "st_auth"
-# Set COOKIE_SECRET in Cloudflare dashboard as an encrypted secret:
-# wrangler secret put COOKIE_SECRET
